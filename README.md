@@ -1,4 +1,4 @@
-# DappVote — CN6035 Decentralised Voting DApp
+# DecentraVote — CN6035 Decentralised Voting DApp
 
 A full-stack blockchain voting application built with Solidity, Hardhat, Node.js/Express, and React.
 
@@ -17,7 +17,7 @@ A full-stack blockchain voting application built with Solidity, Hardhat, Node.js
 
 ```bash
 # Root (Hardhat / contract tooling)
-cd C:\Projects\dappvote-project
+cd C:\Projects\DecentraVote
 npm install
 
 # Backend
@@ -34,7 +34,7 @@ npm install
 ### 2. Start the local blockchain (Terminal 1)
 
 ```bash
-cd C:\Projects\dappvote-project
+cd C:\Projects\DecentraVote
 npm run node
 ```
 
@@ -45,7 +45,7 @@ Leave this running. It prints 20 test accounts — copy **Account #0**'s private
 ### 3. Deploy the smart contract (Terminal 2)
 
 ```bash
-cd C:\Projects\dappvote-project
+cd C:\Projects\DecentraVote
 npm run deploy:local
 ```
 
@@ -56,7 +56,7 @@ This compiles `contracts/Voting.sol`, deploys it to the local chain, and automat
 ### 4. Start the backend (Terminal 3)
 
 ```bash
-cd C:\Projects\dappvote-project\backend
+cd C:\Projects\DecentraVote\backend
 npm run dev
 ```
 
@@ -67,7 +67,7 @@ API available at `http://localhost:5000/api/health`.
 ### 5. Start the frontend (Terminal 4)
 
 ```bash
-cd C:\Projects\dappvote-project\frontend
+cd C:\Projects\DecentraVote\frontend
 npm run dev
 ```
 
@@ -156,7 +156,7 @@ nodemon watches for file changes and auto-restarts when `contractABI.json` is up
 ## Project Structure
 
 ```
-dappvote-project/
+DecentraVote/
 ├── contracts/
 │   └── Voting.sol          # Solidity smart contract
 ├── scripts/
