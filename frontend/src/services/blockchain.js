@@ -12,11 +12,37 @@ let contract = null;
 
 // Read-only provider works before wallet connection
 const DEFAULT_RPC = import.meta.env.VITE_RPC_URL || "http://127.0.0.1:8545";
+const _rpcProvider = new ethers.JsonRpcProvider(DEFAULT_RPC);
+_rpcProvider.pollingInterval = 4000; // Reduce eth_blockNumber polling to avoid RPC overload
+
 let readOnlyContract = new ethers.Contract(
   contractData.address,
   contractData.abi,
-  new ethers.JsonRpcProvider(DEFAULT_RPC)
+  _rpcProvider
 );
+
+/**
+ * Wait for a transaction with retry on RPC errors
+ */
+const waitForTx = async (tx, retries = 3) => {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await tx.wait();
+    } catch (err) {
+      const isRpcError =
+        err?.code === "UNKNOWN_ERROR" ||
+        err?.error?.code === -32002 ||
+        (err?.message || "").includes("too many errors") ||
+        (err?.message || "").includes("could not coalesce");
+
+      if (attempt < retries - 1 && isRpcError) {
+        await new Promise((r) => setTimeout(r, 3000 * (attempt + 1)));
+        continue;
+      }
+      throw err;
+    }
+  }
+};
 
 // ─── Provider Initialisation ───────────────────────────────────────────────────
 
@@ -58,6 +84,7 @@ export const connectWallet = async () => {
   }
 
   provider = new ethers.BrowserProvider(window.ethereum);
+  provider.pollingInterval = 4000;
   signer = await provider.getSigner();
   contract = new ethers.Contract(contractData.address, contractData.abi, signer);
 
@@ -151,8 +178,7 @@ export const createPoll = async ({
     candidateImages
   );
 
-  const receipt = await tx.wait();
-  return receipt;
+  return await waitForTx(tx);
 };
 
 /**
@@ -162,8 +188,7 @@ export const castVote = async (pollId, candidateId) => {
   if (!contract) throw new Error("Wallet not connected");
 
   const tx = await contract.vote(pollId, candidateId);
-  const receipt = await tx.wait();
-  return receipt;
+  return await waitForTx(tx);
 };
 
 /**
@@ -173,6 +198,5 @@ export const deletePoll = async (pollId) => {
   if (!contract) throw new Error("Wallet not connected");
 
   const tx = await contract.deletePoll(pollId);
-  const receipt = await tx.wait();
-  return receipt;
+  return await waitForTx(tx);
 };

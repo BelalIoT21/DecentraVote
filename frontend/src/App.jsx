@@ -376,7 +376,15 @@ const CreatePollModal = ({ onClose, onCreate }) => {
       });
       onClose();
     } catch (err) {
-      alert("Error creating poll: " + (err.reason || err.message));
+      const isRpcOverload =
+        err?.error?.code === -32002 ||
+        (err?.error?.message || "").includes("too many errors") ||
+        (err?.message || "").includes("too many errors") ||
+        (err?.message || "").includes("could not coalesce");
+      const msg = isRpcOverload
+        ? "RPC node is overloaded — make sure Hardhat is running (`npx hardhat node`) and try again."
+        : (err.reason || err.shortMessage || err.message);
+      alert("Error creating poll: " + msg);
     } finally {
       setLoading(false);
     }
