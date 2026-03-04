@@ -71,7 +71,7 @@ describe("Voting Contract", function () {
         voting
           .connect(director)
           .createPoll("Bad Poll", "Desc", start, end, ["OnlyOne"], [""])
-      ).to.be.revertedWith("Voting: need at least 2 candidates");
+      ).to.be.revertedWithCustomError(voting, "NeedTwoCandidate");
     });
 
     it("should revert if endTime <= startTime", async () => {
@@ -82,7 +82,7 @@ describe("Voting Contract", function () {
         voting
           .connect(director)
           .createPoll("Bad Times", "Desc", start, end, ["A", "B"], ["", ""])
-      ).to.be.revertedWith("Voting: invalid time range");
+      ).to.be.revertedWithCustomError(voting, "InvalidTimeRange");
     });
   });
 
@@ -97,7 +97,7 @@ describe("Voting Contract", function () {
       const tx = await voting
         .connect(director)
         .createPoll("Language Poll", "Best lang?", start, end, ["Python", "JS"], ["", ""]);
-      const receipt = await tx.wait();
+      await tx.wait();
       pollId = 1;
 
       // Fast-forward to when poll is active
@@ -117,14 +117,14 @@ describe("Voting Contract", function () {
 
     it("should revert if voter votes twice", async () => {
       await voting.connect(voter1).vote(pollId, 1);
-      await expect(voting.connect(voter1).vote(pollId, 2)).to.be.revertedWith(
-        "Voting: already voted in this poll"
+      await expect(voting.connect(voter1).vote(pollId, 2)).to.be.revertedWithCustomError(
+        voting, "AlreadyVoted"
       );
     });
 
     it("should revert with invalid candidateId", async () => {
-      await expect(voting.connect(voter1).vote(pollId, 99)).to.be.revertedWith(
-        "Voting: invalid candidate"
+      await expect(voting.connect(voter1).vote(pollId, 99)).to.be.revertedWithCustomError(
+        voting, "InvalidCandidate"
       );
     });
 
@@ -150,17 +150,17 @@ describe("Voting Contract", function () {
 
     it("director can delete their poll", async () => {
       await voting.connect(director).deletePoll(1);
-      await expect(voting.getPoll(1)).to.be.revertedWith("Voting: poll has been deleted");
+      await expect(voting.getPoll(1)).to.be.revertedWithCustomError(voting, "PollIsDeleted");
     });
 
     it("owner can delete any poll", async () => {
       await voting.connect(owner).deletePoll(1);
-      await expect(voting.getPoll(1)).to.be.revertedWith("Voting: poll has been deleted");
+      await expect(voting.getPoll(1)).to.be.revertedWithCustomError(voting, "PollIsDeleted");
     });
 
     it("random user cannot delete a poll", async () => {
-      await expect(voting.connect(voter1).deletePoll(1)).to.be.revertedWith(
-        "Voting: not authorised to delete this poll"
+      await expect(voting.connect(voter1).deletePoll(1)).to.be.revertedWithCustomError(
+        voting, "NotAuthorised"
       );
     });
   });

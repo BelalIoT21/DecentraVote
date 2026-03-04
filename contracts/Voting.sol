@@ -8,6 +8,22 @@ pragma solidity ^0.8.19;
  *         Enhanced with additional functionality and explainability features
  */
 contract Voting {
+    // ─── Custom Errors ─────────────────────────────────────────────────────────
+
+    error NotOwner();
+    error PollNotExist();
+    error PollIsDeleted();
+    error PollNotActive();
+    error TitleEmpty();
+    error InvalidTimeRange();
+    error StartTimeInPast();
+    error NeedTwoCandidate();
+    error LengthMismatch();
+    error AlreadyVoted();
+    error InvalidCandidate();
+    error NotAuthorised();
+    error PollNotEnded();
+
     // ─── State Variables ───────────────────────────────────────────────────────
 
     address public owner;
@@ -61,22 +77,21 @@ contract Voting {
     // ─── Modifiers ─────────────────────────────────────────────────────────────
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "Voting: caller is not the owner");
+        if (msg.sender != owner) revert NotOwner();
         _;
     }
 
     modifier pollExists(uint256 _pollId) {
-        require(_pollId > 0 && _pollId <= pollCount, "Voting: poll does not exist");
-        require(!polls[_pollId].deleted, "Voting: poll has been deleted");
+        if (_pollId == 0 || _pollId > pollCount) revert PollNotExist();
+        if (polls[_pollId].deleted) revert PollIsDeleted();
         _;
     }
 
     modifier pollActive(uint256 _pollId) {
-        require(
-            block.timestamp >= polls[_pollId].startTime &&
-            block.timestamp <= polls[_pollId].endTime,
-            "Voting: poll is not currently active"
-        );
+        if (
+            block.timestamp < polls[_pollId].startTime ||
+            block.timestamp > polls[_pollId].endTime
+        ) revert PollNotActive();
         _;
     }
 
@@ -105,14 +120,11 @@ contract Voting {
         string[] memory _candidateNames,
         string[] memory _candidateImages
     ) external returns (uint256) {
-        require(bytes(_title).length > 0, "Voting: title cannot be empty");
-        require(_startTime < _endTime, "Voting: invalid time range");
-        require(_startTime >= block.timestamp, "Voting: start time must be in future");
-        require(_candidateNames.length >= 2, "Voting: need at least 2 candidates");
-        require(
-            _candidateNames.length == _candidateImages.length,
-            "Voting: names and images length mismatch"
-        );
+        if (bytes(_title).length == 0) revert TitleEmpty();
+        if (_startTime >= _endTime) revert InvalidTimeRange();
+        if (_startTime < block.timestamp) revert StartTimeInPast();
+        if (_candidateNames.length < 2) revert NeedTwoCandidate();
+        if (_candidateNames.length != _candidateImages.length) revert LengthMismatch();
 
         pollCount++;
         uint256 newPollId = pollCount;
@@ -152,12 +164,8 @@ contract Voting {
         pollExists(_pollId)
         pollActive(_pollId)
     {
-        require(!hasVoted[_pollId][msg.sender], "Voting: already voted in this poll");
-        require(
-            _candidateId >= 1 &&
-            _candidateId <= polls[_pollId].candidates.length,
-            "Voting: invalid candidate"
-        );
+        if (hasVoted[_pollId][msg.sender]) revert AlreadyVoted();
+        if (_candidateId < 1 || _candidateId > polls[_pollId].candidates.length) revert InvalidCandidate();
 
         hasVoted[_pollId][msg.sender] = true;
         voterChoice[_pollId][msg.sender] = _candidateId;
@@ -173,10 +181,7 @@ contract Voting {
      * @dev Delete a poll (only poll director or contract owner)
      */
     function deletePoll(uint256 _pollId) external pollExists(_pollId) {
-        require(
-            msg.sender == polls[_pollId].director || msg.sender == owner,
-            "Voting: not authorised to delete this poll"
-        );
+        if (msg.sender != polls[_pollId].director && msg.sender != owner) revert NotAuthorised();
         polls[_pollId].deleted = true;
         emit PollDeleted(_pollId, msg.sender);
     }
@@ -225,7 +230,7 @@ contract Voting {
         pollExists(_pollId)
         returns (string memory winnerName, uint256 winnerVotes)
     {
-        require(block.timestamp > polls[_pollId].endTime, "Voting: poll has not ended");
+        if (block.timestamp <= polls[_pollId].endTime) revert PollNotEnded();
         uint256 highestVotes = 0;
         uint256 winnerIndex = 0;
 
