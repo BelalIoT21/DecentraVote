@@ -16,14 +16,16 @@
     "format": "prettier --write \"**/*.{js,sol,json,md}\""
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
     "chai": "^4.3.0",
+    "concurrently": "^9.2.1",
     "dotenv": "^16.3.1",
     "eslint": "^8.56.0",
     "hardhat": "^2.19.4",
     "prettier": "^3.1.1",
     "prettier-plugin-solidity": "^1.3.1",
-    "solhint": "^4.1.1"
+    "solhint": "^4.1.1",
+    "wait-on": "^9.0.4"
   }
 }

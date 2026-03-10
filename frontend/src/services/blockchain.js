@@ -96,6 +96,30 @@ export const connectWallet = async () => {
 };
 
 /**
+ * Silently reconnect if MetaMask already has permission (no popup).
+ * Returns the address string or null if not already connected/authorised.
+ */
+export const tryAutoConnect = async () => {
+  if (!window.ethereum) return null;
+  try {
+    const accounts = await window.ethereum.request({ method: "eth_accounts" });
+    if (!accounts || accounts.length === 0) return null;
+
+    const chainId = await window.ethereum.request({ method: "eth_chainId" });
+    if (chainId !== "0x7a69") return null; // wrong network — don't auto-connect
+
+    provider = new ethers.BrowserProvider(window.ethereum);
+    signer = await provider.getSigner();
+    contract = new ethers.Contract(contractData.address, contractData.abi, signer);
+    readOnlyContract = new ethers.Contract(contractData.address, contractData.abi, provider);
+
+    return await signer.getAddress();
+  } catch {
+    return null;
+  }
+};
+
+/**
  * Listen for MetaMask account or network changes
  */
 export const listenForAccountChanges = (callback) => {
@@ -189,6 +213,15 @@ export const castVote = async (pollId, candidateId) => {
 
   const tx = await contract.vote(pollId, candidateId);
   return await waitForTx(tx);
+};
+
+/**
+ * Subscribe to PollCreated contract events. Returns an unsubscribe function.
+ */
+export const subscribePollCreated = (callback) => {
+  const src = contract || readOnlyContract;
+  src.on("PollCreated", callback);
+  return () => src.off("PollCreated", callback);
 };
 
 /**
